@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "note"
+version = "0.0.1"
+dependencies = [
+    "click >= 8.1.3",
+    "thefuzz",
+    "python-Levenshtein"
+]
+
+[project.scripts]
+note = "note.cli:main"
+
+[tool.setuptools]
+include-package-data = true

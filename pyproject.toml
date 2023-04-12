@@ -7,7 +7,10 @@ version = "0.0.1"
 dependencies = [
     "click >= 8.1.3",
     "thefuzz",
-    "python-Levenshtein"
+    "python-Levenshtein",
+    "black",
+    "flake8",
+    "pyproject-flake8"
 ]
 
 [project.scripts]
@@ -15,3 +18,10 @@ note = "note.cli:main"
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203"
+
+[tool.isort]
+profile = "black"

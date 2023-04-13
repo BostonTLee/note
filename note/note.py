@@ -1,6 +1,7 @@
 import os
 import json
 import subprocess
+import datetime
 from dataclasses import dataclass, field
 from typing import List, Optional
 from pathlib import Path
@@ -16,20 +17,23 @@ class NoteSearchResult:
 
 @total_ordering
 class Note:
+    FILENAME: str = "README.md"
+    TAG_MARKER: str = "tags:"
+    DATE_MARKER: str = "date:"
+
     def __init__(self, id, notes_dir):
-        self.FILENAME: str = "README.md"
-        self.TAG_MARKER: str = "tags:"
         self.id: str = id
         self.notes_dir: Path = notes_dir
         self.dir: Path = self.notes_dir / self.id
         self.path: Path = self.dir / self.FILENAME
-        if not self.path.exists():
-            self.title: Optional[str] = None
-            self._tag_line: Optional[str] = None
-            self.body: Optional[str] = None
-            self.tags: List[str] = []
-            self.has_tags: bool = False
-        else:
+        self.title: Optional[str] = None
+        self._tag_line: Optional[str] = None
+        self.body: Optional[str] = None
+        self.body_lines: Optional[List[str]] = None
+        self.tags: List[str] = []
+        self.date: Optional[datetime] = None
+        self.has_tags: bool = False
+        if self.path.exists():
             self._parse()
 
     def __str__(self):
@@ -44,20 +48,41 @@ class Note:
     def __hash__(self) -> int:
         return hash(int(self.id))
 
+    def _parse_title(self, lines):
+        self.title = lines[0].replace("# ", "").strip() if len(lines) > 0 else None
+
+    def _parse_date(self, lines):
+        date_line = None
+        if len(lines) > 1:
+            for line in lines[1:]:
+                if line.strip() != "":
+                    date_line = line.strip()
+                    break
+            if date_line and date_line.startswith(self.DATE_MARKER):
+                date_line_tokens = date_line.split()
+                try:
+                    self.date = datetime.date.fromisoformat(date_line_tokens[1])
+                except:
+                    self.date = None
+
+    def _parse_tags(self, lines):
+        if len(lines) > 1:
+            final_line = lines[len(lines) - 1].strip()
+            if final_line.startswith(self.TAG_MARKER):
+                self._tag_line: str = final_line.replace(self.TAG_MARKER, "")
+                self.has_tags = True
+            else:
+                self._tag_line = None
+                self.has_tags = False
+        else:
+            self.has_tags = False
+
     def _parse(self):
         with open(self.path, "r") as f:
             lines = f.readlines()
-            self.title = lines[0].replace("# ", "").strip() if len(lines) > 0 else None
-            if len(lines) > 1:
-                final_line = lines[len(lines) - 1].strip()
-                if final_line.startswith(self.TAG_MARKER):
-                    self._tag_line: str = final_line.replace(self.TAG_MARKER, "")
-                    self.has_tags = True
-                else:
-                    self._tag_line = None
-                    self.has_tags = False
-            else:
-                self.has_tags = False
+            self._parse_title(lines)
+            self._parse_date(lines)
+            self._parse_tags(lines)
 
             if self.has_tags:
                 if len(lines) > 2:
@@ -86,14 +111,14 @@ class Note:
                 else []
             )
 
+    def create(self):
+        if not self.dir.is_dir():
+            self.dir.mkdir()
+
     def edit(self):
         self.create()
         cmd = os.environ.get("EDITOR", "vi") + " " + str(self.path)
         subprocess.call(cmd, shell=True)
-
-    def create(self):
-        if not self.dir.is_dir():
-            self.dir.mkdir()
 
     def print(self, how="user"):
         if how == "full":
@@ -101,15 +126,15 @@ class Note:
             print(self.body)
             print(self.tags)
         elif how == "summary":
-            first_line = self.body_lines[0] if self.body_lines else ""
             print(f"{self.id}: {self.title}")
-            print(f"    body: {first_line}")
+            print(f"    date: {self.date}")
             print(f"    tags: {self.tags}")
         elif how == "plain":
-            print(f"{self.id}: {self.title}: {self.tags}")
+            padded_date = self.date.isoformat() if self.date else " " * 10
+            print(f"{self.id}: ({padded_date}) {self.title}: {self.tags}")
         elif how == "json":
-            dict_repr = {"id": self.id, "title": self.title, "tags": self.tags}
-            print(json.dumps(dict_repr))
+            dict_repr = {"id": self.id, "date": self.date, "title": self.title, "tags": self.tags}
+            print(json.dumps(dict_repr, default=str))
 
     def search_body(self, search_string, how="exact") -> int:
         search_string = search_string.lower()

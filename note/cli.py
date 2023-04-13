@@ -22,9 +22,9 @@ def cli(ctx, note_dir_type):
 
     These tags can be used to search and index the notes"""
     if note_dir_type == "personal":
-        note_dir = os.environ.get("NOTES_DIR", "~/test-notes")
+        note_dir = os.path.expanduser(os.environ.get("NOTES_DIR", "~/test-notes"))
     if note_dir_type == "work":
-        note_dir = os.environ.get("WORK_NOTES_DIR", "~/test-work_notes")
+        note_dir = os.path.expanduser(os.environ.get("WORK_NOTES_DIR", "~/test-work_notes"))
     manager = NoteManager(Path(note_dir))
     ctx.obj = manager
 

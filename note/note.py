@@ -133,7 +133,12 @@ class Note:
             padded_date = self.date.isoformat() if self.date else " " * 10
             print(f"{self.id}: ({padded_date}) {self.title}: {self.tags}")
         elif how == "json":
-            dict_repr = {"id": self.id, "date": self.date, "title": self.title, "tags": self.tags}
+            dict_repr = {
+                "id": self.id,
+                "date": self.date,
+                "title": self.title,
+                "tags": self.tags,
+            }
             print(json.dumps(dict_repr, default=str))
 
     def search_body(self, search_string, how="exact") -> int:

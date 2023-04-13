@@ -4,6 +4,7 @@ from typing import List, Dict
 from pathlib import Path
 from datetime import datetime
 from note.note import Note
+from note.note_id import NoteId
 from collections import defaultdict
 
 
@@ -18,23 +19,16 @@ class NoteManager:
             index[note.id] = note
         return index
 
-    def generate_note_id(self):
-        return datetime.now().strftime("%Y%m%d%H%M%S")
-
     def list_note_ids(self):
         return [
-            str(entry.name)
+            NoteId(entry.name)
             for entry in self.root_dir.iterdir()
-            if entry.is_dir() and self.is_valid_note_id(str(entry.name))
+            if entry.is_dir() and NoteId.is_valid_note_id(str(entry.name))
         ]
 
     def list_notes(self):
         notes = sorted([Note(id, self.root_dir) for id in self.list_note_ids()])
         return notes
-
-    def is_valid_note_id(self, note_id):
-        exp = r"^[0-9]{14}$"
-        return re.match(exp, note_id)
 
     def print_notes(self, how="summary"):
         for note in reversed(self.index.values()):
@@ -44,7 +38,7 @@ class NoteManager:
         return max(self.list_note_ids())
 
     def create_note(self):
-        id = self.generate_note_id()
+        id = NoteId.generate_note_id()
         note = Note(id, self.root_dir)
         note.edit()
 

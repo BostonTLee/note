@@ -7,12 +7,7 @@ from typing import List, Optional
 from pathlib import Path
 from thefuzz import fuzz
 from functools import total_ordering
-
-
-@dataclass
-class NoteSearchResult:
-    matched: bool
-    matched_tags: List[str] = field(default_factory=list)
+from note.note_id import NoteId
 
 
 @total_ordering
@@ -21,10 +16,10 @@ class Note:
     TAG_MARKER: str = "tags:"
     DATE_MARKER: str = "date:"
 
-    def __init__(self, id, notes_dir):
-        self.id: str = id
+    def __init__(self, id: NoteId, notes_dir: Path):
+        self.id: NoteId = id
         self.notes_dir: Path = notes_dir
-        self.dir: Path = self.notes_dir / self.id
+        self.dir: Path = self.notes_dir / str(self.id)
         self.path: Path = self.dir / self.FILENAME
         self.title: Optional[str] = None
         self._tag_line: Optional[str] = None
@@ -51,7 +46,7 @@ class Note:
     def _parse_title(self, lines):
         self.title = lines[0].replace("# ", "").strip() if len(lines) > 0 else None
 
-    def _parse_date(self, lines):
+    def _parse_date(self, lines) -> datetime.date:
         date_line = None
         if len(lines) > 1:
             for line in lines[1:]:
@@ -61,9 +56,9 @@ class Note:
             if date_line and date_line.startswith(self.DATE_MARKER):
                 date_line_tokens = date_line.split()
                 try:
-                    self.date = datetime.date.fromisoformat(date_line_tokens[1])
+                    return datetime.date.fromisoformat(date_line_tokens[1])
                 except:
-                    self.date = None
+                    return None
 
     def _parse_tags(self, lines):
         if len(lines) > 1:
@@ -81,7 +76,7 @@ class Note:
         with open(self.path, "r") as f:
             lines = f.readlines()
             self._parse_title(lines)
-            self._parse_date(lines)
+            self.date = self._parse_date(lines) or self.id.date
             self._parse_tags(lines)
 
             if self.has_tags:

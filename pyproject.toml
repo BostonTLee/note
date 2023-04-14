@@ -10,7 +10,8 @@ dependencies = [
     "python-Levenshtein",
     "black",
     "flake8",
-    "pyproject-flake8"
+    "pyproject-flake8",
+    "pytest"
 ]
 
 [project.scripts]

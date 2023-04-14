@@ -26,7 +26,7 @@ class Note:
         self.body: Optional[str] = None
         self.body_lines: Optional[List[str]] = None
         self.tags: List[str] = []
-        self.date: Optional[datetime] = None
+        self.date: Optional[datetime.date] = None
         self.has_tags: bool = False
         if self.path.exists():
             self._parse()

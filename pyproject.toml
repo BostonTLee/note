@@ -8,6 +8,7 @@ dependencies = [
     "click >= 8.1.3",
     "thefuzz",
     "python-Levenshtein",
+    "markdown",
     "black",
     "flake8",
     "pyproject-flake8",

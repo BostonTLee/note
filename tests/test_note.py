@@ -50,11 +50,13 @@ def test_tags_parsed():
     TEST_NOTES_DIR_PATH = Path("test_notes")
     file_data = textwrap.dedent(
         """\
+        ---
+        tags: tag 1, tag 2
+        ---
         # This is a test file
 
         body
-
-        tags: tag 1, tag 2"""
+        """
     )
     with patch("builtins.open", mock_open(read_data=file_data)):
         with patch.object(Path, "exists") as mock_exists:
@@ -68,13 +70,15 @@ def test_date_parsed_if_present():
     TEST_NOTES_DIR_PATH = Path("test_notes")
     file_data = textwrap.dedent(
         """\
+        ---
+        date: 2021-09-21
+        tags: tag 1, tag 2
+        ---
         # This is a test file
 
-        date: 2021-09-21
 
         body
-
-        tags: tag 1, tag 2"""
+        """
     )
     with patch("builtins.open", mock_open(read_data=file_data)):
         with patch.object(Path, "exists") as mock_exists:
@@ -88,11 +92,14 @@ def test_date_inferred_if_not_present():
     TEST_NOTES_DIR_PATH = Path("test_notes")
     file_data = textwrap.dedent(
         """\
+        ---
+        tags: tag 1, tag 2
+        ---
         # This is a test file
 
-        body
 
-        tags: tag 1, tag 2"""
+        body
+        """
     )
     with patch("builtins.open", mock_open(read_data=file_data)):
         with patch.object(Path, "exists") as mock_exists:

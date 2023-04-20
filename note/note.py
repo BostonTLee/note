@@ -2,6 +2,7 @@ import os
 import json
 import subprocess
 import datetime
+from markdown import Markdown
 from dataclasses import dataclass, field
 from typing import List, Optional
 from pathlib import Path
@@ -21,12 +22,13 @@ class Note:
         self.notes_dir: Path = notes_dir
         self.dir: Path = self.notes_dir / str(self.id)
         self.path: Path = self.dir / self.FILENAME
-        self.title: Optional[str] = None
-        self._tag_line: Optional[str] = None
-        self.body: Optional[str] = None
-        self.body_lines: Optional[List[str]] = None
+        self._parser = Markdown(extensions=["meta"])
+        self.title: str = ""
+        self._tag_line: str = ""
+        self.body: str = ""
+        self.body_lines: List[str] = []
         self.tags: List[str] = []
-        self.date: Optional[datetime.date] = None
+        self.date: datetime.date = self.id.date
         self.has_tags: bool = False
         if self.path.exists():
             self._parse()
@@ -43,66 +45,32 @@ class Note:
     def __hash__(self) -> int:
         return hash(int(self.id))
 
-    def _parse_title(self, lines):
-        self.title = lines[0].replace("# ", "").strip() if len(lines) > 0 else None
+    def _parse_title(self, lines) -> Optional[str]:
+        lines = [line for line in lines if line != ""]
+        return lines[0].replace("# ", "").strip() if len(lines) > 0 else None
 
-    def _parse_date(self, lines) -> datetime.date:
-        date_line = None
-        if len(lines) > 1:
-            for line in lines[1:]:
-                if line.strip() != "":
-                    date_line = line.strip()
-                    break
-            if date_line and date_line.startswith(self.DATE_MARKER):
-                date_line_tokens = date_line.split()
-                try:
-                    return datetime.date.fromisoformat(date_line_tokens[1])
-                except:
-                    return None
-
-    def _parse_tags(self, lines):
-        if len(lines) > 1:
-            final_line = lines[len(lines) - 1].strip()
-            if final_line.startswith(self.TAG_MARKER):
-                self._tag_line: str = final_line.replace(self.TAG_MARKER, "")
-                self.has_tags = True
-            else:
-                self._tag_line = None
-                self.has_tags = False
-        else:
-            self.has_tags = False
+    def _parse_date(self, raw_date) -> Optional[datetime.date]:
+        try:
+            return datetime.date.fromisoformat(raw_date)
+        except:
+            return None
 
     def _parse(self):
         with open(self.path, "r") as f:
-            lines = f.readlines()
-            self._parse_title(lines)
-            self.date = self._parse_date(lines) or self.id.date
-            self._parse_tags(lines)
-
-            if self.has_tags:
-                if len(lines) > 2:
-                    self.body_lines = [line for line in lines[1 : len(lines) - 2]]
-                    self.body = "".join(self.body_lines)
-                    self.body_lines = [
-                        line.strip() for line in self.body_lines if line.strip() != ""
-                    ]
-                else:
-                    self.body_lines = None
-                    self.body = None
-            else:
-                if len(lines) > 2:
-                    self.body_lines = [line for line in lines[1 : len(lines) - 1]]
-                    self.body = "".join(self.body_lines)
-                    self.body_lines = [
-                        line.strip() for line in self.body_lines if line.strip() != ""
-                    ]
-                else:
-                    self.body_lines = None
-                    self.body = None
-
+            text = f.read()
+            self._parser.convert(text)
+            lines = self._parser.lines
+            self.body_lines = lines
+            raw_tags = self._parser.Meta.get("tags")
+            self._tag_line = raw_tags[0] if raw_tags else None
+            raw_date_list = self._parser.Meta.get("date")
+            raw_date = raw_date_list[0] if raw_date_list and len(raw_date_list) > 0 else None
+            self.date = self._parse_date(raw_date) or self.id.date
+            raw_title = self._parser.Meta.get("title")
+            self.title = raw_title[0] if raw_title and len(raw_title) > 0 else self._parse_title(lines)
             self.tags: List[str] = (
                 [tag.strip() for tag in self._tag_line.split(",") if tag != ""]
-                if self.has_tags
+                if self._tag_line
                 else []
             )
 

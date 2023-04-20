@@ -2,6 +2,7 @@ import click
 import os
 import sys
 from note.note_manager import NoteManager
+from note.note_id import NoteId
 from pathlib import Path
 import subprocess
 
@@ -60,19 +61,21 @@ def create(manager):
 
 
 @cli.command()
-@click.argument("note_id", required=True)
+@click.argument("note_id_str", required=True)
 @pass_note_manager
-def edit(manager, note_id):
+def edit(manager, note_id_str):
     """Edit an existing note, by ID
 
     Optionally, pass the special string "last" to edit the most recent note,
     by ID timestamp
     """
-    if note_id == "last":
-        note_id = manager.find_last_note_id()
-    if not manager.is_valid_note_id(note_id):
-        click.echo(f"Invalid note ID: {note_id}")
+    if note_id_str == "last":
+        note_id = NoteId.find_last_note_id()
+    elif not NoteId.is_valid_note_id(note_id_str):
+        click.echo(f"Invalid note ID: {note_id_str}")
         sys.exit(1)
+    else:
+        note_id = NoteId(note_id_str)
     manager.edit_note(note_id)
 
 
